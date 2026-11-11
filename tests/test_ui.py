@@ -173,6 +173,16 @@ def test_the_preview_of_a_capture_shows_the_captured_piece_as_a_ghost(page):
     expect(square(page, "d5").locator(".piece.black:not(.ghost)")).to_have_count(1)
 
 
+def test_undoing_a_capture_removes_it_from_the_captured_display(page):
+    move(page, "e2", "e4")
+    move(page, "d7", "d5")
+    move(page, "e4", "d5")
+    expect(page.locator("#captured .piece")).to_have_count(1)
+    page.locator("#undo").click()
+    expect(page.locator("#captured .piece")).to_have_count(0)
+    expect(page.locator("#captured")).to_have_text("None")
+
+
 def test_against_the_computer_undo_takes_back_both_moves(page):
     page.get_by_role("button", name="New game: play the computer").click()
     move(page, "e2", "e4")
@@ -195,4 +205,22 @@ def test_new_game_clears_what_could_be_undone(page):
     page.get_by_role("button", name="New game: two players").click()
     expect(page.locator("#undo")).to_be_disabled()
     expect(page.locator("#moves li")).to_have_count(0)
+    expect(page.locator("#turn")).to_have_text("White to move")
+
+
+def test_undoing_a_promotion_in_the_browser(page):
+    for source, target in [("a2", "a4"), ("h7", "h5"), ("a4", "a5"), ("h5", "h4"),
+                           ("a5", "a6"), ("h4", "h3"), ("a6", "b7"), ("h3", "g2")]:
+        move(page, source, target)
+    expect(page.locator("#captured .piece")).to_have_count(2)
+    square(page, "b7").click()
+    expect(square(page, "b7")).to_have_class(re.compile("selected"))
+    square(page, "a8").click()
+    page.locator('#promotion-choices button[aria-label="queen"]').click()
+    expect(square(page, "a8").locator(".piece.white:not(.ghost)")).to_have_count(1)
+    expect(page.locator("#captured .piece")).to_have_count(3)
+    page.locator("#undo").click()
+    expect(square(page, "b7").locator(".piece.white:not(.ghost)")).to_have_count(1)
+    expect(square(page, "a8").locator(".piece.black:not(.ghost)")).to_have_count(1)
+    expect(page.locator("#captured .piece")).to_have_count(2)
     expect(page.locator("#turn")).to_have_text("White to move")

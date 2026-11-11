@@ -2,6 +2,7 @@ import json
 import threading
 import urllib.request
 
+import session as session_module
 from server import make_server
 from session import Session
 
@@ -68,7 +69,9 @@ def test_preview_against_the_computer_before_it_replies_is_only_my_move():
     assert [m["label"] for m in moves] == ["e2-e4"]
 
 
-def test_the_preview_matches_what_undo_actually_does():
+def test_the_preview_matches_what_undo_actually_does(monkeypatch):
+    replies = iter([("e7", "e5"), ("b8", "c6")])
+    monkeypatch.setattr(session_module, "choose_move", lambda position: next(replies))
     session = Session("computer")
     play(session, ("e2", "e4"))
     session.dispatch({"action": "computer-move"})

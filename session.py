@@ -1,7 +1,7 @@
 """Application actions and information shown beside the board."""
 
 from computer import choose_move
-from captured import missing_pieces
+from captured import captured_pieces
 from game import (
     copy_position,
     legal_moves,
@@ -28,7 +28,6 @@ class Session:
             raise ValueError("Unknown opponent")
         self.position = new_position()
         self.notation = []
-        self.captured = []
         self.opponent = opponent
         # One entry per move played, oldest first. Each entry is plain JSON data:
         #   {"label": "e2-e4", "before": [board, turn], "after": [board, turn]}
@@ -81,7 +80,7 @@ class Session:
         self.redo.append(entry)
 
     def after_move(self):
-        self.captured = missing_pieces(self.position)
+        pass
 
     def view(self):
         return {
@@ -101,7 +100,7 @@ class Session:
                 and status(self.position) not in ("checkmate", "stalemate"))
 
     def sidebar(self):
-        return {"captured": self.captured}
+        return {"captured": captured_pieces(self.history)}
 
     def dispatch(self, action):
         command = action.get("action")

@@ -39,19 +39,38 @@ class Session:
         before = copy_position(self.position)
         label = move(self.position, source, target)
         self.notation.append(label)
-        self.history.append({"label": label, "before": before,
-                             "after": copy_position(self.position)})
+        self.history.append({"label": label, "source": source, "target": target,
+                             "before": before, "after": copy_position(self.position)})
         self.redo = []
         self.after_move()
 
     def undo(self):
         """Take back the last move. Against the computer, take back its reply as well,
         so it is the player's turn again. Does nothing when there is no move."""
-        if not self.history:
-            return
-        self.take_back()
-        if self.opponent == "computer" and self.position[1] == "b" and self.history:
+        for _ in range(self.undo_count()):
             self.take_back()
+
+    def undo_count(self):
+        """How many moves undo takes back: 0 with no history, 2 when it also takes back
+        the computer's reply to the player's move, otherwise 1."""
+        if not self.history:
+            return 0
+        if (self.opponent == "computer" and len(self.history) >= 2
+                and self.history[-1]["before"][1] == "b"):
+            return 2
+        return 1
+
+    def undo_preview(self):
+        """The moves undo would take back, latest first, or None. The page draws them
+        as a ghost: `piece` goes back to `source`, and `captured` returns to `target`."""
+        count = self.undo_count()
+        if not count:
+            return None
+        return {"moves": [
+            {"label": entry["label"], "source": entry["source"], "target": entry["target"],
+             "piece": entry["before"][0][entry["source"]],
+             "captured": entry["before"][0].get(entry["target"])}
+            for entry in reversed(self.history[-count:])]}
 
     def take_back(self):
         entry = self.history.pop()
@@ -71,6 +90,7 @@ class Session:
             "status": status(self.position),
             "winner": winner(self.position),
             "can_undo": bool(self.history),
+            "undo_preview": self.undo_preview(),
             **self.sidebar(),
         }
 

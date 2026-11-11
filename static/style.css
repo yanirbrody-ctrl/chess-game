@@ -55,6 +55,25 @@ aside h3 { font-size: .85rem; font-weight: 600; color: var(--muted); margin: 20p
 #controls button { padding: 8px 16px; border: 1px solid #3a465b; background: #283246;
   color: #fff; border-radius: 6px; }
 #controls button:hover { background: #313d55; border-color: var(--brass); }
+#controls #undo { display: inline-flex; align-items: center; gap: 8px; }
+#undo svg { width: 18px; height: 18px; transition: transform .25s ease; }
+#undo:hover:not(:disabled) svg, #undo:focus-visible svg { transform: rotate(-35deg); }
+#controls #undo:disabled { opacity: .4; cursor: not-allowed; }
+#controls #undo:disabled:hover { background: #283246; border-color: #3a465b; }
+#undo-caption { min-height: 1.5em; margin: 8px 0 0; color: var(--brass); font-size: .9rem; }
+
+/* Ghost-move preview: hovering Undo shows the way back on the board. */
+.square.undo-change { box-shadow: inset 0 0 0 2px rgba(185, 154, 91, .6); }
+.square .piece.fading { opacity: .3; }
+.square .piece.ghost { position: absolute; inset: 0; display: grid; place-items: center;
+  opacity: .55; pointer-events: none; transform: none; }
+.undo-arrows { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2;
+  pointer-events: none; overflow: visible; }
+.undo-arrows line { stroke: var(--brass); stroke-width: .12; stroke-linecap: round;
+  stroke-dasharray: .28 .22; animation: march 1s linear infinite; }
+.undo-arrows path { fill: var(--brass); }
+@keyframes march { to { stroke-dashoffset: -.5; } }
+
 #message { min-height: 1.5em; margin: 0 0 8px; color: #ff8a80; }
 #moves { max-height: 320px; overflow: auto; margin: 0; padding-left: 2.2em;
   font-variant-numeric: tabular-nums; color: var(--muted); }
@@ -64,7 +83,10 @@ aside h3 { font-size: .85rem; font-weight: 600; color: var(--muted); margin: 20p
 #captured .piece { font-size: 26px; padding: 3px 4px; border-radius: 4px;
   background: linear-gradient(135deg, #f1f3f6, var(--pearl) 60%, #d9dde4); }
 [hidden] { display: none !important; }
-@media (prefers-reduced-motion: reduce) { .piece { transition: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .piece, #undo svg { transition: none; }
+  .undo-arrows line { animation: none; }
+}
 @media (max-width: 720px) {
   .layout { grid-template-columns: 1fr; gap: 24px; }
   main { padding: 16px 12px; }

@@ -224,3 +224,47 @@ def test_undoing_a_promotion_in_the_browser(page):
     expect(square(page, "a8").locator(".piece.black:not(.ghost)")).to_have_count(1)
     expect(page.locator("#captured .piece")).to_have_count(2)
     expect(page.locator("#turn")).to_have_text("White to move")
+
+
+def save_to_file(page):
+    with page.expect_download() as download:
+        page.locator("#save").click()
+    return download.value.path()
+
+
+def test_saving_and_loading_in_the_browser_keeps_captures_and_undo(page):
+    move(page, "e2", "e4")
+    move(page, "d7", "d5")
+    move(page, "e4", "d5")
+    saved = save_to_file(page)
+    page.get_by_role("button", name="New game: two players").click()
+    expect(page.locator("#moves li")).to_have_count(0)
+    expect(page.locator("#undo")).to_be_disabled()
+    page.locator("#load-file").set_input_files(saved)
+    expect(page.locator("#moves li span")).to_have_count(3)
+    expect(page.locator("#captured .piece")).to_have_count(1)
+    expect(page.locator("#undo")).to_be_enabled()
+    page.locator("#undo").click()
+    expect(page.locator("#moves li span")).to_have_count(2)
+    expect(page.locator("#captured .piece")).to_have_count(0)
+    expect(square(page, "d5").locator(".piece.black:not(.ghost)")).to_have_count(1)
+
+
+def test_a_loaded_game_shows_the_undo_preview(page):
+    move(page, "e2", "e4")
+    saved = save_to_file(page)
+    page.get_by_role("button", name="New game: two players").click()
+    page.locator("#load-file").set_input_files(saved)
+    expect(page.locator("#moves li span")).to_have_text(["e2-e4"])
+    hover_undo(page)
+    expect(page.locator("#undo-caption")).to_have_text("Take back e2-e4")
+    expect(page.locator(".undo-arrows line")).to_have_count(1)
+
+
+def test_loading_a_file_that_is_not_a_save_keeps_the_game(page, tmp_path):
+    move(page, "e2", "e4")
+    bad = tmp_path / "not-a-save.json"
+    bad.write_text('{"hello": 1}')
+    page.locator("#load-file").set_input_files(str(bad))
+    expect(page.locator("#message")).to_contain_text("Invalid save file")
+    expect(page.locator("#moves li span")).to_have_text(["e2-e4"])

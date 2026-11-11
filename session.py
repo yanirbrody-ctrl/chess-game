@@ -49,9 +49,11 @@ class Session:
         before = copy_position(self.position)
         label = move(self.position, source, target, promotion)
         self.notation.append(label)
-        self.history.append({"label": label, "source": source, "target": target,
-                             "promotion": promotion,
-                             "before": before, "after": copy_position(self.position)})
+        entry = {"label": label, "source": source, "target": target,
+                 "before": before, "after": copy_position(self.position)}
+        if promotion:  # only promotions record it, so plain moves save as source and target
+            entry["promotion"] = promotion
+        self.history.append(entry)
         self.redo = []
         self.after_move()
 

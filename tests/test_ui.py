@@ -206,3 +206,21 @@ def test_new_game_clears_what_could_be_undone(page):
     expect(page.locator("#undo")).to_be_disabled()
     expect(page.locator("#moves li")).to_have_count(0)
     expect(page.locator("#turn")).to_have_text("White to move")
+
+
+def test_undoing_a_promotion_in_the_browser(page):
+    for source, target in [("a2", "a4"), ("h7", "h5"), ("a4", "a5"), ("h5", "h4"),
+                           ("a5", "a6"), ("h4", "h3"), ("a6", "b7"), ("h3", "g2")]:
+        move(page, source, target)
+    expect(page.locator("#captured .piece")).to_have_count(2)
+    square(page, "b7").click()
+    expect(square(page, "b7")).to_have_class(re.compile("selected"))
+    square(page, "a8").click()
+    page.locator('#promotion-choices button[aria-label="queen"]').click()
+    expect(square(page, "a8").locator(".piece.white:not(.ghost)")).to_have_count(1)
+    expect(page.locator("#captured .piece")).to_have_count(3)
+    page.locator("#undo").click()
+    expect(square(page, "b7").locator(".piece.white:not(.ghost)")).to_have_count(1)
+    expect(square(page, "a8").locator(".piece.black:not(.ghost)")).to_have_count(1)
+    expect(page.locator("#captured .piece")).to_have_count(2)
+    expect(page.locator("#turn")).to_have_text("White to move")

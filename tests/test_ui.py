@@ -173,6 +173,16 @@ def test_the_preview_of_a_capture_shows_the_captured_piece_as_a_ghost(page):
     expect(square(page, "d5").locator(".piece.black:not(.ghost)")).to_have_count(1)
 
 
+def test_undoing_a_capture_removes_it_from_the_captured_display(page):
+    move(page, "e2", "e4")
+    move(page, "d7", "d5")
+    move(page, "e4", "d5")
+    expect(page.locator("#captured .piece")).to_have_count(1)
+    page.locator("#undo").click()
+    expect(page.locator("#captured .piece")).to_have_count(0)
+    expect(page.locator("#captured")).to_have_text("None")
+
+
 def test_against_the_computer_undo_takes_back_both_moves(page):
     page.get_by_role("button", name="New game: play the computer").click()
     move(page, "e2", "e4")

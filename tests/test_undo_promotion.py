@@ -1,5 +1,7 @@
 """Undo together with pawn promotion and the captured-pieces display."""
 
+import copy
+
 import session as session_module
 from session import Session
 
@@ -39,7 +41,7 @@ def test_promoting_changes_the_pawn_into_the_chosen_piece():
 
 def test_undoing_a_promotion_brings_back_the_pawn_and_the_captured_piece():
     session = setup_session()
-    before = session.view()
+    before = copy.deepcopy(session.view())
     move(session, "b7", "a8", "Q")
     view = undo(session)
     assert view["board"] == before["board"]

@@ -51,10 +51,14 @@ aside { background: var(--panel); border-radius: 8px; padding: 20px 22px;
   box-shadow: 0 16px 40px rgba(0, 0, 0, .35); }
 aside h2 { margin: 0 0 6px; font-size: 1.25rem; color: #fff; font-weight: 600; }
 aside h3 { font-size: .85rem; font-weight: 600; color: var(--muted); margin: 20px 0 6px; }
-#controls { display: flex; gap: 8px; flex-wrap: wrap; }
-#controls button { padding: 8px 16px; border: 1px solid #3a465b; background: #283246;
+#controls, #files { display: flex; gap: 8px; flex-wrap: wrap; }
+#controls button, #files button { padding: 8px 16px; border: 1px solid #3a465b; background: #283246;
   color: #fff; border-radius: 6px; }
-#controls button:hover { background: #313d55; border-color: var(--brass); }
+#controls button:hover, #files button:hover { background: #313d55; border-color: var(--brass); }
+#files { margin-top: 8px; }
+#files button { display: inline-flex; padding: 8px; }
+#files svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8;
+  stroke-linecap: round; stroke-linejoin: round; }
 #message { min-height: 1.5em; margin: 0 0 8px; color: #ff8a80; }
 #moves { max-height: 320px; overflow: auto; margin: 0; padding-left: 2.2em;
   font-variant-numeric: tabular-nums; color: var(--muted); }

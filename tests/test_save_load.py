@@ -27,10 +27,14 @@ def load(session, text):
     return session.dispatch({"action": "load", "data": text})
 
 
+def squares(entries):
+    return [(entry["source"], entry["target"]) for entry in entries]
+
+
 def test_history_records_each_move_and_new_game_clears_it():
     session = played(OPENING[:2])
-    assert session.history == [{"source": "e2", "target": "e4"},
-                                {"source": "d7", "target": "d5"}]
+    assert squares(session.history) == OPENING[:2]
+    assert [entry["label"] for entry in session.history] == ["e2-e4", "d7-d5"]
     assert session.redo == []
     session.dispatch({"action": "new"})
     assert session.history == [] and session.redo == []
@@ -90,10 +94,14 @@ def test_loaded_computer_game_continues():
 
 
 def test_redo_continuation_round_trips():
-    session = played(OPENING[:3])
-    session.redo = [{"source": "g8", "target": "f6"}, {"source": "f1", "target": "b5"}]
+    session = played()
+    session.undo()
+    session.undo()
+    saved = session.dispatch({"action": "save"})["save"]
+    assert saved["redo"] == [{"source": "g8", "target": "f6"},
+                             {"source": "f1", "target": "b5"}]
     fresh = Session()
-    load(fresh, save_text(session))
+    load(fresh, json.dumps(saved))
     assert fresh.redo == session.redo
     assert fresh.history == session.history
     assert fresh.position == session.position
@@ -103,7 +111,7 @@ def test_play_after_load_extends_history():
     fresh = Session()
     load(fresh, save_text(played(OPENING[:2])))
     fresh.dispatch({"action": "move", "source": "b1", "target": "c3"})
-    assert fresh.history[-1] == {"source": "b1", "target": "c3"}
+    assert squares(fresh.history)[-1] == ("b1", "c3")
     assert fresh.notation[-1] == "b1-c3"
 
 

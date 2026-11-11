@@ -1,7 +1,7 @@
 // Filled glyphs for both sides; CSS colours them white or black.
 const glyphs = {K:'♚\uFE0E', Q:'♛\uFE0E', R:'♜\uFE0E', B:'♝\uFE0E', N:'♞\uFE0E', P:'♟\uFE0E'};
 const names = {K:'king', Q:'queen', R:'rook', B:'bishop', N:'knight', P:'pawn'};
-let state, selected = null, targets = [], busy = false;
+let state, selected = null, targets = [], busy = false, previewing = false;
 const message = document.querySelector('#message');
 
 async function request(action) {
@@ -72,6 +72,7 @@ function render() {
       board.append(button);
     }
   }
+  document.querySelector('#undo').disabled = !state.can_undo;
   const computer = state.opponent === 'computer';
   const side = computer ? (state.turn === 'w' ? 'Your move' : 'The computer is thinking')
                         : `${state.turn === 'w' ? 'White' : 'Black'} to move`;
@@ -94,6 +95,61 @@ function render() {
   const captured = state.captured || [];
   document.querySelector('#captured').replaceChildren(...captured.map(pieceGlyph));
   if (!captured.length) document.querySelector('#captured').textContent = 'None';
+  drawUndoPreview();
+}
+
+// Ghost-move preview: while the pointer or focus is on Undo, show the board as it will be
+// after undo. Changed squares fade the piece now there and show the returning piece as a
+// ghost; a dashed arrow runs from where each piece is now back to where it came from.
+function drawUndoPreview() {
+  const caption = document.querySelector('#undo-caption');
+  const moves = previewing && state.undo_preview ? state.undo_preview.moves : null;
+  caption.textContent = moves ? 'Take back ' + moves.map(m => m.label).reverse().join(', ') : '';
+  if (!moves) return;
+  const after = {...state.board};
+  for (const m of moves) {
+    after[m.source] = m.piece;
+    if (m.captured) after[m.target] = m.captured; else delete after[m.target];
+  }
+  const board = document.querySelector('#board');
+  for (const button of board.children) {
+    const square = button.dataset.square;
+    if (after[square] === state.board[square]) continue;
+    button.classList.add('undo-change');
+    button.querySelector('.piece')?.classList.add('fading');
+    if (after[square]) {
+      const ghost = pieceGlyph(after[square]);
+      ghost.classList.add('ghost');
+      button.append(ghost);
+    }
+  }
+  board.append(undoArrows(moves));
+}
+
+function undoArrows(moves) {
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('class', 'undo-arrows');
+  svg.setAttribute('viewBox', '0 0 8 8');
+  svg.setAttribute('aria-hidden', 'true');
+  const marker = document.createElementNS(ns, 'marker');
+  marker.id = 'undo-head';
+  for (const [name, value] of Object.entries({markerWidth: 6, markerHeight: 6, refX: 4, refY: 3, orient: 'auto'}))
+    marker.setAttribute(name, value);
+  const head = document.createElementNS(ns, 'path');
+  head.setAttribute('d', 'M0 0 L6 3 L0 6 z');
+  marker.append(head); svg.append(marker);
+  const centre = square => [ 'abcdefgh'.indexOf(square[0]) + 0.5, 8 - Number(square[1]) + 0.5 ];
+  for (const m of moves) {
+    const [x1, y1] = centre(m.target), [x2, y2] = centre(m.source);
+    const length = Math.hypot(x2 - x1, y2 - y1), cut = 0.3 / length;
+    const line = document.createElementNS(ns, 'line');
+    line.setAttribute('x1', x1 + (x2 - x1) * cut); line.setAttribute('y1', y1 + (y2 - y1) * cut);
+    line.setAttribute('x2', x2 - (x2 - x1) * cut); line.setAttribute('y2', y2 - (y2 - y1) * cut);
+    line.setAttribute('marker-end', 'url(#undo-head)');
+    svg.append(line);
+  }
+  return svg;
 }
 
 function pieceGlyph(piece) {
@@ -138,9 +194,16 @@ async function clickSquare(square) {
   finally { busy = false; }
 }
 
+const undoButton = document.querySelector('#undo');
+for (const [begin, end] of [['mouseenter', 'mouseleave'], ['focus', 'blur']]) {
+  undoButton.addEventListener(begin, () => { if (state) { previewing = true; render(); } });
+  undoButton.addEventListener(end, () => { if (state) { previewing = false; render(); } });
+}
+
 document.querySelector('#controls').onclick = async event => {
   const button = event.target.closest('button');
   if (!button?.dataset.action || busy) return;
+  if (button.dataset.action === 'undo') previewing = false;
   busy = true;
   try {
     state = await request({action: button.dataset.action, opponent: button.dataset.opponent});

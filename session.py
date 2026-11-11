@@ -2,6 +2,7 @@
 
 from computer import choose_move
 from game import (
+    copy_position,
     legal_moves,
     move,
     new_position,
@@ -27,11 +28,36 @@ class Session:
         self.position = new_position()
         self.notation = []
         self.opponent = opponent
+        # One entry per move played, oldest first. Each entry is plain JSON data:
+        #   {"label": "e2-e4", "before": [board, turn], "after": [board, turn]}
+        # `history` holds the moves currently played; `redo` holds undone moves, with the
+        # most recently undone move last. A new move discards `redo`.
+        self.history = []
+        self.redo = []
 
     def play(self, source, target):
+        before = copy_position(self.position)
         label = move(self.position, source, target)
         self.notation.append(label)
+        self.history.append({"label": label, "before": before,
+                             "after": copy_position(self.position)})
+        self.redo = []
         self.after_move()
+
+    def undo(self):
+        """Take back the last move. Against the computer, take back its reply as well,
+        so it is the player's turn again. Does nothing when there is no move."""
+        if not self.history:
+            return
+        self.take_back()
+        if self.opponent == "computer" and self.position[1] == "b" and self.history:
+            self.take_back()
+
+    def take_back(self):
+        entry = self.history.pop()
+        self.position = copy_position(entry["before"])
+        self.notation.pop()
+        self.redo.append(entry)
 
     def after_move(self):
         pass
@@ -44,6 +70,7 @@ class Session:
             "opponent": self.opponent,
             "status": status(self.position),
             "winner": winner(self.position),
+            "can_undo": bool(self.history),
             **self.sidebar(),
         }
 
@@ -64,6 +91,8 @@ class Session:
             if not self.computer_to_move():
                 raise ValueError("It is not the computer's turn")
             self.play(*choose_move(self.position))
+        elif command == "undo":
+            self.undo()
         elif command == "legal":
             return {"targets": legal_moves(self.position, action.get("source"))}
         elif command == "new":

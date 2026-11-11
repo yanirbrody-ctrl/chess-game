@@ -88,6 +88,53 @@ def test_a_rejected_move_leaves_nothing_to_undo():
     assert session.view()["can_undo"] is False
 
 
+def test_history_holds_one_entry_per_move_played():
+    session = Session()
+    assert session.history == [] and session.redo == []
+    play(session, ("e2", "e4"), ("e7", "e5"))
+    assert [entry["label"] for entry in session.history] == ["e2-e4", "e7-e5"]
+    first = session.history[0]
+    assert first["before"] == new_position()
+    assert first["after"][0]["e4"] == "wP" and first["after"][1] == "b"
+
+
+def test_undo_moves_the_entry_from_history_to_redo():
+    session = Session()
+    play(session, ("e2", "e4"), ("e7", "e5"))
+    session.dispatch({"action": "undo"})
+    assert [entry["label"] for entry in session.history] == ["e2-e4"]
+    assert [entry["label"] for entry in session.redo] == ["e7-e5"]
+    session.dispatch({"action": "undo"})
+    assert session.history == []
+    assert [entry["label"] for entry in session.redo] == ["e7-e5", "e2-e4"]
+
+
+def test_a_new_move_after_undo_discards_redo():
+    session = Session()
+    play(session, ("e2", "e4"))
+    session.dispatch({"action": "undo"})
+    assert len(session.redo) == 1
+    play(session, ("d2", "d4"))
+    assert session.redo == []
+
+
+def test_new_game_clears_history_and_redo():
+    session = Session()
+    play(session, ("e2", "e4"), ("e7", "e5"))
+    session.dispatch({"action": "undo"})
+    session.dispatch({"action": "new"})
+    assert session.history == [] and session.redo == []
+
+
+def test_history_and_redo_can_be_saved_as_plain_json():
+    import json
+    session = Session()
+    play(session, ("e2", "e4"), ("e7", "e5"))
+    session.dispatch({"action": "undo"})
+    saved = json.loads(json.dumps({"history": session.history, "redo": session.redo}))
+    assert saved == {"history": session.history, "redo": session.redo}
+
+
 def test_against_the_computer_undo_takes_back_both_moves():
     session = Session("computer")
     play(session, ("e2", "e4"))

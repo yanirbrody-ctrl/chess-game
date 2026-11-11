@@ -72,6 +72,7 @@ function render() {
       board.append(button);
     }
   }
+  document.querySelector('#undo').disabled = !state.can_undo;
   const computer = state.opponent === 'computer';
   const side = computer ? (state.turn === 'w' ? 'Your move' : 'The computer is thinking')
                         : `${state.turn === 'w' ? 'White' : 'Black'} to move`;
